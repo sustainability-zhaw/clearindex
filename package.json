@@ -1,0 +1,24 @@
+{
+  "name": "clearindex",
+  "version": "1.0.0",
+  "description": "Microservice to reset the indexing process",
+  "main": "src/index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sustainability-zhaw/clearindex.git"
+  },
+  "author": "Christian Glahn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sustainability-zhaw/clearindex/issues"
+  },
+  "homepage": "https://github.com/sustainability-zhaw/clearindex#readme",
+  "devDependencies": {
+    "@eslint/js": "^8.55.0",
+    "eslint": "^8.55.0",
+    "globals": "^13.23.0"
+  }
+}
