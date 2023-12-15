@@ -1,0 +1,14 @@
+{
+    "api": {
+        "port": 8080
+    },
+    "service": {
+        "dbhost": "dgraph_db:8080",
+        "mq_host": "dgraph_mq",
+        "mq_exchange": "zhaw_content",
+        "mq_key": "indexer.update"
+    },
+    "debug": {
+        "level": "debug"
+    }
+}
