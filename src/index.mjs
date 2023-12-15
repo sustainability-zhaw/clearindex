@@ -1,3 +1,31 @@
+import * as Config from "@phish108/yaml-configurator";
+import {initLogger, getLogger} from "service-logger";
+
+import Koa from "koa";
+import Router from "@koa/router";
+import KoaCompose from "koa-compose";
+import koaBody from "koa-body";
+
+// load from the first location that matches.
+const cfg = await Config.readConfig(
+        [
+            "/etc/app/config.yaml",
+            "./config.yaml", 
+            "./tools/config.yaml"
+        ],
+        ["service.dbhost", "service.mq_host"],
+        {
+            service: {
+                mq_exchange: "",
+                mq_key: ""
+            },
+            debug: {
+                level: "debug"
+            }
+        }
+);
+
+initLogger({level: cfg.debug.level});
 
 // the index should load the config, setup the API endpoints and connect to rabbitMQ. 
 
