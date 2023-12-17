@@ -62,9 +62,10 @@ async function updateIndex(ctx, next) {
     // 1. Get all matching terms and object links and sdgs.
     const data = await fetchMatches();
 
-    if (data.matches && data.matches.length) {
+    if (data.matches && Object.keys(data.matches).length) {
         // For all terms drop their matches
-        await Promise.all(data.matches.map(dropMatch));
+
+        await Promise.all(Object.entries(data.matches).map(dropSDG));
         ctx.body = {message: "OK"}
     }
     else {
@@ -89,16 +90,70 @@ async function fetchMatches() {
         }
     }`;
 
-    const result = await runRequest(cfg.service.dbhost);
+    const result = await runRequest(cfg.service.dbhost, {query});
 
     if ("errors" in result) {
-        console.log(`fetching data failed: ${JSON.stringify(result.errors, null, "  ")}`);
+        log.error(`fetching data failed: ${JSON.stringify(result.errors, null, "  ")}`);
     }
 
-    return result.data;
+    // if data was loaded, it will be remapped by SDG.id
+    return result.data?.reduce(arrangeConstructs, {});
+}
+
+function arrangeConstructs(index, construct) {
+    const sdgid = construct.sdg?.id;
+
+    if (!(sdgid in index)) {
+        index[sdgid] = [];
+    }
+
+    index[sdgid].push(construct);
+
+    return index;
+}
+
+/**
+ * dropSDG removes ONE SDG from the database
+ * 
+ * @param {String} sdg
+ * @param {Array} constructs
+ * 
+ * This function asks each construct's index to be deleted from the database. 
+ * Once all constructs are deleted, the function signals to the message queue 
+ * that the SDG is unindexed. 
+ * 
+ * This function should called from within an Object.entries().map() chain.
+ * Such chain guarantees that the object key is the first value and the 
+ * data is the second. 
+ */
+async function dropSDG([sdg, constructs]) {
+    await Promise.all(constructs.map(dropMatch));
+    
+    // After the terms are fully cleared, 
+    //    it can get reindexed via a message to the indexer.
+
+    // SIGNAL TO REINDEX
+    MQ.signal({sdg});
 }
 
 async function dropMatch(match) {
+    const query = `
+    mutation dropMatches(
+        $construct: UpdateSdgMatchInput!, 
+        $matcher: UpdateInfoObjectInput!
+    ) {
+      updateSdgMatch (input: $construct) {
+        sdgMatch {
+          construct
+        }
+      }
+      
+      updateInfoObject (input: $matcher) {
+        infoObject {
+          link
+        }
+      }
+    }`;
 
     // 2. drop all objects from matching terms, build object sdgs and terms 
     const construct = {
@@ -119,65 +174,61 @@ async function dropMatch(match) {
 
     const variables = { construct, matcher };
 
-    const query = `
-    mutation dropMatches($construct: UpdateSdgMatchInput!, $matcher: UpdateInfoObjectInput!) {
-      updateSdgMatch (input: $construct) {
-        sdgMatch {
-          construct
-        }
-      }
-      
-      updateInfoObject (input: $matcher) {
-        infoObject {
-          link
-        }
-      }
-      
-    }`;
-
     const result = await runRequest(cfg.service.dbhost, { query, variables });
 
     if ("errors" in result) {
         log.error(`dropping data failed: ${JSON.stringify(result.errors, null, "  ")}`);
     }
-
-    // After a term is fully cleared, it can get reindexed via a message to the indexer.
-
-    // SIGNAL TO REINDEX
 }
 
 async function runRequest(targetHost, bodyObject) {
-    const method = "POST"; // all requests are POST requests
+    let result;
+    let n = 0;
+
+    const RequestController = new AbortController();
+    const {signal} = RequestController;
+
+    while (!result && n++ < 10) {
+        result = await fetchJson(targetHost, signal, bodyObject)
+    }
+
+    if (!result) {
+        console.log("FATAL: Failed after 10 retries");
+    }
+
+    return result;
+}
+
+function waitRandomTime(min, max) {
+    const waitRange = Math.floor((Math.random() * ((max + 1) - min) + min) * 1000)
+
+    return setTimeout(waitRange);
+}
+
+async function fetchJson(targetHost, signal, jsonObj) {
+    const method = "POST"; // all GQL requests are POST requests
     const cache = "no-store";
 
     const headers = {
         'Content-Type': 'application/json'
     };
 
-    const body = JSON.stringify(bodyObject, null, "  ");
+    const body = JSON.stringify(jsonObj);
 
-    let result;
-    let n = 0;
+    const response = await fetch(targetHost, {
+        signal,
+        method,
+        headers,
+        cache,
+        body
+    });
+        
+    result = await response.json();
 
-    while (n++ < 10 && (!result || ("errors" in  result && result.errors[0].message.endsWith("Please retry")))) {
-        const RequestController = new AbortController();
-        const {signal} = RequestController;
-
-        const response = await fetch(targetHost, {
-            signal,
-            method,
-            headers,
-            cache,
-            body
-        });
-            
-        result = await response.json();
-
-        await setTimeout(Math.floor(Math.random() * 10000));
-    }
-
-    if (n === 10) {
-        console.log("FATAL: Failed after 10 retries");
+    if (!result || ("errors" in  result && result.errors[0].message.endsWith("Please retry"))) {
+        // if asked to retry, wait for 10-45 seconds
+        await waitRandomTime(10, 45);
+        return null;
     }
 
     return result;
