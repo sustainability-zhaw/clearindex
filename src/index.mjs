@@ -56,8 +56,8 @@ router.post("/", koaBody.koaBody(), KoaCompose([
 app.use(router.routes());
 
 async function updateIndex(ctx, next) {
-
-    // Unfortunately, it is impossible to drop all edges between graph nodes in dgraph
+    // Unfortunately, it is impossible to drop all edges between graph nodes
+    //   in dgraph
     
     // 1. Get all matching terms and object links and sdgs.
     const data = await fetchMatches();
@@ -93,7 +93,9 @@ async function fetchMatches() {
     const result = await runRequest(cfg.service.dbhost, {query});
 
     if ("errors" in result) {
-        log.error(`fetching data failed: ${JSON.stringify(result.errors, null, "  ")}`);
+        log.error(
+            `fetching data failed: ${JSON.stringify(result.errors, null, "  ")}`
+        );
     }
 
     // if data was loaded, it will be remapped by SDG.id
@@ -177,7 +179,9 @@ async function dropMatch(match) {
     const result = await runRequest(cfg.service.dbhost, { query, variables });
 
     if ("errors" in result) {
-        log.error(`dropping data failed: ${JSON.stringify(result.errors, null, "  ")}`);
+        log.error(
+            `dropping data failed: ${JSON.stringify(result.errors, null, "  ")}`
+        );
     }
 }
 
@@ -200,7 +204,9 @@ async function runRequest(targetHost, bodyObject) {
 }
 
 function waitRandomTime(min, max) {
-    const waitRange = Math.floor((Math.random() * ((max + 1) - min) + min) * 1000)
+    const waitRange = Math.floor(
+        (Math.random() * ((max + 1) - min) + min) * 1000
+    );
 
     return setTimeout(waitRange);
 }
@@ -225,7 +231,9 @@ async function fetchJson(targetHost, signal, jsonObj) {
         
     result = await response.json();
 
-    if (!result || ("errors" in  result && result.errors[0].message.endsWith("Please retry"))) {
+    if (!result || 
+        ("errors" in  result && 
+         esult.errors[0].message.endsWith("Please retry"))) {
         // if asked to retry, wait for 10-45 seconds
         await waitRandomTime(10, 45);
         return null;
