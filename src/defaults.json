@@ -6,7 +6,9 @@
         "dbhost": "dgraph_db:8080",
         "mq_host": "dgraph_mq",
         "mq_exchange": "zhaw_content",
-        "mq_key": "indexer.update"
+        "mq_key": "indexer.update",
+        "mq_user": "clear-index",
+        "mq_pass": "guest"
     },
     "debug": {
         "level": "debug"
