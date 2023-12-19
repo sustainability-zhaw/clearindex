@@ -32,6 +32,14 @@ export async function connect() {
     Connection.channel = await Connection.conn.createChannel();
 }
 
+function waitRandomTime(min, max) {
+    const waitRange = Math.floor(
+        (Math.random() * ((max + 1) - min) + min) * 1000
+    );
+
+    return setTimeout(waitRange);
+}
+
 export async function signal(updates) {
     if (!(updates && (updates.length || Object.keys(updates).length))) {
         console.log("skip signal");
@@ -53,7 +61,9 @@ export async function signal(updates) {
 
         console.log(`retry in 15 seconds`);
 
-        await setTimeout(15000, "retry");
+        await waitRandomTime(14, 18)
+        // await setTimeout(15000, "retry");
+        
         console.log(`retry now`);
         await connect();
 
