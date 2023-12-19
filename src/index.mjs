@@ -60,3 +60,6 @@ router.post("/", koaBody.koaBody(), KoaCompose([
 ]));
 
 app.use(router.routes());
+
+// start the server
+app.listen(cfg.port || 8080);
