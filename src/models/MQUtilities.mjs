@@ -1,7 +1,9 @@
 import amqp from "amqplib";
+import {initLogger, getLogger} from "service_logger";
 
 import { setTimeout } from "node:timers/promises";
 
+const log = getLogger("MQUtilities");
 const Connection = {};
 
 export function init(options) {
@@ -20,16 +22,25 @@ export function init(options) {
         // vhost: '/',
       };
 
-    console.log(`MQ target: ${JSON.stringify(Connection)}`);
+      log.log(`MQ target: ${JSON.stringify(Connection)}`);
  }
 
 export async function connect() {
     if (Connection.conn) {
+        log.log("close existing connection");
         await Connection.conn.close();
+        
+        delete Connection.conn;
+        log.debug("connection closed");
     }
 
+    log.debug(`connect to MQ target: ${JSON.stringify(Connection.host)}`);
+
     Connection.conn = await amqp.connect(Connection.host);
+    log.debug("MQ connected");
+
     Connection.channel = await Connection.conn.createChannel();
+    log.debug("MQ channel created");
 }
 
 function waitRandomTime(min, max) {
@@ -42,10 +53,10 @@ function waitRandomTime(min, max) {
 
 export async function signal(updates) {
     if (!(updates && (updates.length || Object.keys(updates).length))) {
-        console.log("skip signal");
+        log.info("skip signal");
     }
 
-    console.log(`signal ${Connection.sendkey} with ${JSON.stringify(updates)}`);
+    log.debug(`signal ${Connection.sendkey} with ${JSON.stringify(updates)}`);
     try {
         Connection.channel.publish(
             Connection.target,
@@ -54,17 +65,17 @@ export async function signal(updates) {
         );
     }
     catch (err) {
-        console.log(`MQ ERROR ${err.message}`);
+        log.warning(`MQ ERROR ${err.message}`);
         // there are 2 reasons for an error:
         // 1. the file is invalid
         // 2. the MQ connection is broken
 
-        console.log(`retry in 15 seconds`);
+        log.warning(`retry in 15 seconds`);
 
         await waitRandomTime(14, 18)
         // await setTimeout(15000, "retry");
         
-        console.log(`retry now`);
+        log.notice(`retry now`);
         await connect();
 
         try {
@@ -75,7 +86,7 @@ export async function signal(updates) {
             );
         }
         catch (err) {
-            console.log(`UNRECOVERABLE MQ ERROR for ${err.message}`);
+            log.alert(`UNRECOVERABLE MQ ERROR for ${err.message}`);
         }
     }
 }
