@@ -1,5 +1,5 @@
 # Create runtime (public) container
-FROM node:19-alpine
+FROM node:21.6.0-alpine3.19
 
 LABEL maintainer="phish108 <cpglahn@gmail.com>"
 LABEL org.opencontainers.image.source="https://github.com/sustainability-zhaw/clearindex"
