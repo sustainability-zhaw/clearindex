@@ -4,8 +4,8 @@
     },
     "service": {
         "dbhost": "dgraph_db:8080",
-        "mq_host": "dgraph_mq",
-        "mq_exchange": "zhaw_content",
+        "mq_host": "message-queue",
+        "mq_exchange": "zhaw-kw",
         "mq_key": "indexer.update",
         "mq_user": "clear-index",
         "mq_pass": "guest"
