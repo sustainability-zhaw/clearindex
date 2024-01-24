@@ -3,7 +3,7 @@
         "port": 8080
     },
     "service": {
-        "dbhost": "dgraph_db:8080",
+        "dbhost": "database:8080",
         "mq_host": "message-queue",
         "mq_exchange": "zhaw-kw",
         "mq_key": "indexer.update",
