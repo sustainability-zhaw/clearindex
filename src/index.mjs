@@ -1,5 +1,5 @@
 import * as Config from "@phish108/yaml-configurator";
-import {initLogger, getLogger} from "service_logger";
+import * as Logger from "service_logger";
 
 import Koa from "koa";
 import Router from "@koa/router";
@@ -31,9 +31,9 @@ const cfg = await Config.readConfig(
         defaults
 );
 
-initLogger({level: cfg.debug.level});
+Logger.init(cfg.debug);
 
-const log = getLogger("index");
+const log = Logger.get("index");
 
 log.debug(cfg)
 

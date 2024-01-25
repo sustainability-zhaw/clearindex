@@ -1,9 +1,9 @@
 import amqp from "amqplib";
-import {initLogger, getLogger} from "service_logger";
+import * as Logger from "service_logger";
 
 import { setTimeout } from "node:timers/promises";
 
-const log = getLogger("MQUtilities");
+const log = Logger.get("MQUtilities");
 const Connection = {};
 
 export function init(options) {
@@ -22,7 +22,7 @@ export function init(options) {
         // vhost: '/',
       };
 
-      log.log(`MQ target: ${JSON.stringify(Connection)}`);
+      log.log({message: `MQ target: ${JSON.stringify(Connection)}`});
  }
 
 export async function connect() {

@@ -31,6 +31,6 @@
     "koa": "^2.14.2",
     "koa-body": "^6.0.1",
     "koa-compose": "^4.1.0",
-    "service_logger": "github:phish108/node-service-logger#1c43af5"
+    "service_logger": "github:phish108/node-service-logger#5aee176"
   }
 }

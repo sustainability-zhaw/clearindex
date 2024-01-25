@@ -1,6 +1,6 @@
-import {getLogger} from "service_logger";
+import * as Logger from "service_logger";
 
-const log = getLogger("handler/logrequest");
+const log = Logger.get("handler/logrequest");
 
 export async function logRequest(ctx, next) {
     log.performance("request done");
