@@ -1,7 +1,7 @@
 import * as Logger from "service_logger";
 import * as MQ from "../models/MQUtilities.mjs";
 
-const log = Logger.get("updateIndex");
+const log = Logger.get("handler/updateIndex");
 
 const cfg = {}; 
 

@@ -3,7 +3,7 @@ import * as Logger from "service_logger";
 
 import { setTimeout } from "node:timers/promises";
 
-const log = Logger.get("MQUtilities");
+const log = Logger.get("models/MQUtilities");
 const Connection = {};
 
 export function init(options) {
