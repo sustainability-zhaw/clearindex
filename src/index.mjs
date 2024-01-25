@@ -52,7 +52,7 @@ router.get("/", KoaCompose([
 ]));
 
 // The endpoint accepts currently any request body
-router.post("/", koaBody.koaBody(), KoaCompose([
+router.get("/clearall", koaBody.koaBody(), KoaCompose([
     // normally we will enter here
     logHeader,
     updateIndex(cfg),

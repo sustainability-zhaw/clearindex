@@ -2,7 +2,6 @@ import {getLogger} from "service_logger";
 
 import * as MQ from "../models/MQUtilities.mjs";
 
-
 const log = getLogger("updateIndex");
 
 const cfg = {}; 
@@ -15,7 +14,7 @@ export function updateIndex(config) {
 
 async function handler(ctx, next) {
     // Unfortunately, it is impossible to drop all edges between graph nodes
-    //   in dgraph
+    // in dgraph
     
     // 1. Get all matching terms and object links and sdgs.
     const data = await fetchMatches();
