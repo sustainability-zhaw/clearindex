@@ -38,6 +38,7 @@ const log = getLogger("index");
 log.debug(cfg)
 
 MQ.init(cfg.service);
+MQ.connect();
 
 const dbServiceUrl = `http://${cfg.service.dbhost}/graphql`
 
@@ -62,5 +63,4 @@ router.get("/clearall", koaBody.koaBody(), KoaCompose([
 app.use(router.routes());
 
 // start the server
-MQ.connect();
-app.listen(cfg.port || 8080);
+app.listen(cfg.api.port);
