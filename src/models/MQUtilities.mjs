@@ -63,6 +63,7 @@ export async function signal(updates) {
             Connection.sendkey,
             Buffer.from(JSON.stringify(updates))
         );
+        log.debug("signal sent");
     }
     catch (err) {
         log.warning(`MQ ERROR ${err.message}`);
@@ -76,17 +77,29 @@ export async function signal(updates) {
         // await setTimeout(15000, "retry");
 
         log.notice("retry now");
-        await connect();
+        try {
+            log.notice("reset connection, buy why?");
+            await connect();
+        }
+        catch (err) {
+            log.alert(`cannot connect to MQ with error ${err.message}`);
+            return;
+        }
 
         try {
+            log.debug("retry signal");
+
             Connection.channel.publish(
                 Connection.target,
                 Connection.sendkey,
                 Buffer.from(JSON.stringify(updates))
             );
+
+            log.debug("signal finally sent");
         }
         catch (err) {
             log.alert(`UNRECOVERABLE MQ ERROR for ${err.message}`);
         }
     }
+    log.debug("signal complete");
 }

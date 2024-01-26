@@ -26,6 +26,8 @@ async function handler(ctx, next) {
         ctx.body = {message: "OK"};
     }
     else {
+        log.debug(data);
+
         ctx.body = {message: "no matches to reindex"};
     }
 
@@ -183,7 +185,7 @@ async function fetchJson(targetHost, signal, jsonObj) {
 
     let result;
 
-    log.debug(`fetch ${targetHost} with ${body}`);
+    // log.debug(`fetch ${targetHost} with ${body}`);
 
     try {
         const response = await fetch(targetHost, {
