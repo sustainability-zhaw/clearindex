@@ -3,29 +3,30 @@ import * as MQ from "../models/MQUtilities.mjs";
 
 const log = Logger.get("handler/updateIndex");
 
-const cfg = {}; 
+const cfg = {};
 
 export function updateIndex(config) {
     cfg.service = config.service;
-    
+    cfg.dbServiceUrl = `http://${config.service.dbhost}/graphql`;
+
     return handler;
 }
 
 async function handler(ctx, next) {
     // Unfortunately, it is impossible to drop all edges between graph nodes
     // in dgraph
-    
+
     // 1. Get all matching terms and object links and sdgs.
     const data = await fetchMatches();
 
-    if (data.matches && Object.keys(data.matches).length) {
+    if (data && Object.keys(data).length) {
         // For all terms drop their matches from the related objects
 
-        await Promise.all(Object.entries(data.matches).map(dropSDG));
-        ctx.body = {message: "OK"}
+        await Promise.all(Object.entries(data).map(dropSDG));
+        ctx.body = {message: "OK"};
     }
     else {
-        ctx.body = {message: "no matches to reindex"}
+        ctx.body = {message: "no matches to reindex"};
     }
 
     await next();
@@ -46,7 +47,7 @@ async function fetchMatches() {
         }
     }`;
 
-    const result = await runRequest(cfg.service.dbhost, {query});
+    const result = await runRequest(cfg.dbServiceUrl, {query});
 
     if ("errors" in result) {
         log.error(
@@ -55,7 +56,9 @@ async function fetchMatches() {
     }
 
     // if data was loaded, it will be remapped by SDG.id
-    return result.data?.reduce(arrangeConstructs, {});
+    // log.debug(result.data);
+
+    return result.data?.matches?.reduce(arrangeConstructs, {});
 }
 
 function arrangeConstructs(index, construct) {
@@ -72,22 +75,22 @@ function arrangeConstructs(index, construct) {
 
 /**
  * dropSDG removes ONE SDG from the database
- * 
+ *
  * @param {String} sdg
  * @param {Array} constructs
- * 
- * This function asks each construct's index to be deleted from the database. 
- * Once all constructs are deleted, the function signals to the message queue 
- * that the SDG is unindexed. 
- * 
+ *
+ * This function asks each construct's index to be deleted from the database.
+ * Once all constructs are deleted, the function signals to the message queue
+ * that the SDG is unindexed.
+ *
  * This function should called from within an Object.entries().map() chain.
- * Such chain guarantees that the object key is the first value and the 
- * data is the second. 
+ * Such chain guarantees that the object key is the first value and the
+ * data is the second.
  */
 async function dropSDG([sdg, constructs]) {
     await Promise.all(constructs.map(dropMatch));
-    
-    // After the terms are fully cleared, 
+
+    // After the terms are fully cleared,
     //    it can get reindexed via a message to the indexer.
 
     // SIGNAL TO REINDEX
@@ -113,13 +116,13 @@ async function dropMatch(match) {
       }
     }`;
 
-    // 2. drop all objects from matching terms, build object sdgs and terms 
+    // 2. drop all objects from matching terms, build object sdgs and terms
     const construct = {
         "filter": {"construct": {"eq": match.construct}},
         "remove": {
-          "objects": match.objects
+            "objects": match.objects
         }
-      }
+    };
 
     // 3. drop all sdgs and matching terms from infoobjects
     const matcher = {
@@ -132,7 +135,7 @@ async function dropMatch(match) {
 
     const variables = { construct, matcher };
 
-    const result = await runRequest(cfg.service.dbhost, { query, variables });
+    const result = await runRequest(cfg.dbServiceUrl, { query, variables });
 
     if ("errors" in result) {
         log.error(
@@ -148,12 +151,13 @@ async function runRequest(targetHost, bodyObject) {
     const RequestController = new AbortController();
     const {signal} = RequestController;
 
-    while (!result && n++ < 10) {
-        result = await fetchJson(targetHost, signal, bodyObject)
+    while (!result && n < 10) {
+        n += 1;
+        result = await fetchJson(targetHost, signal, bodyObject);
     }
 
     if (!result) {
-        console.log("FATAL: Failed after 10 retries");
+        log.error("FATAL: Failed after 10 retries");
     }
 
     return result;
@@ -161,10 +165,10 @@ async function runRequest(targetHost, bodyObject) {
 
 function waitRandomTime(min, max) {
     const waitRange = Math.floor(
-        (Math.random() * ((max + 1) - min) + min) * 1000
+        (Math.random() * (max + 1 - min) + min) * 1000
     );
 
-    return setTimeout(waitRange);
+    return new Promise((r) => setTimeout(r, waitRange));
 }
 
 async function fetchJson(targetHost, signal, jsonObj) {
@@ -172,24 +176,38 @@ async function fetchJson(targetHost, signal, jsonObj) {
     const cache = "no-store";
 
     const headers = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
     };
 
     const body = JSON.stringify(jsonObj);
 
-    const response = await fetch(targetHost, {
-        signal,
-        method,
-        headers,
-        cache,
-        body
-    });
-        
-    result = await response.json();
+    let result;
 
-    if (!result || 
-        ("errors" in  result && 
-         esult.errors[0].message.endsWith("Please retry"))) {
+    log.debug(`fetch ${targetHost} with ${body}`);
+
+    try {
+        const response = await fetch(targetHost, {
+            signal,
+            method,
+            headers,
+            cache,
+            body
+        });
+
+        result = await response.json();
+    }
+    catch (err) {
+        log.error(`fetching ${targetHost} failed: ${err.message}`);
+        // there are 2 reasons for an error:
+        // 1. the file is invalid
+        // 2. the MQ connection is broken
+
+        result = { data: [] };
+    }
+
+    if (!result ||
+        "errors" in  result &&
+         result.errors[0].message.endsWith("Please retry")) {
         // if asked to retry, wait for 10-45 seconds
         await waitRandomTime(10, 45);
         return null;
