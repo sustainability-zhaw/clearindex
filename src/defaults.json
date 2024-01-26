@@ -5,7 +5,7 @@
     "service": {
         "dbhost": "database:8080",
         "mq_host": "message-queue",
-        "mq_exchange": "zhaw-kw",
+        "mq_exchange": "zhaw-km",
         "mq_key": "indexer.update",
         "mq_user": "clear-index",
         "mq_pass": "guest"
