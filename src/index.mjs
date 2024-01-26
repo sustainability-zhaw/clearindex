@@ -18,29 +18,29 @@ import {
 } from "./handler/index.mjs";
 
 // fetch the defaults from file
-import defaults from "./defaults.json" assert {type: "json"};
+
+import defaults from "./defaults.json" with {type: "json"};
+// const defaults = {};
 
 // load from the first location that matches.
 const cfg = await Config.readConfig(
-        [
-            "/etc/app/config.yaml",
-            "./config.yaml", 
-            "./tools/config.yaml"
-        ],
-        ["service.dbhost", "service.mq_host"],
-        defaults
+    [
+        "/etc/app/config.yaml",
+        "./config.yaml",
+        "./tools/config.yaml"
+    ],
+    ["service.dbhost", "service.mq_host"],
+    defaults
 );
 
 Logger.init(cfg.debug);
 
 const log = Logger.get("index");
 
-log.debug(cfg)
+log.debug(cfg);
 
 MQ.init(cfg.service);
 MQ.connect();
-
-const dbServiceUrl = `http://${cfg.service.dbhost}/graphql`
 
 const app = new Koa();
 const router = new Router;
