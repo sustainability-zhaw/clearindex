@@ -43,9 +43,6 @@ async function fetchMatches() {
             sdg { 
                 id 
             }
-            objects {
-                link
-            }
         }
     }`;
 
@@ -70,13 +67,15 @@ function arrangeConstructs(index, construct) {
         index[sdgid] = [];
     }
 
-    index[sdgid].push(construct);
+    construct = construct.construct;
+
+    index[sdgid].push({construct});
 
     return index;
 }
 
 /**
- * dropSDG removes ONE SDG from the database
+ * dropSDG removes ONE SDG from the info objects
  *
  * @param {String} sdg
  * @param {Array} constructs
@@ -90,7 +89,47 @@ function arrangeConstructs(index, construct) {
  * data is the second.
  */
 async function dropSDG([sdg, constructs]) {
-    await Promise.all(constructs.map(dropMatch));
+    const szBatch = 15;
+    const query = `
+    mutation deleteMatches($patch: UpdateInfoObjectInput!){
+        updateInfoObject(input:$patch) {
+             numUids
+        }
+    }`;
+
+    log.debug(`dropSDG ${sdg} with ${constructs.length} constructs`);
+
+    // drop constructs in batches of 50
+    const nBatches = ~~(constructs.length / szBatch) + 1;
+
+    log.debug(`dropSDG ${sdg} in ${nBatches + 1} batches`);
+
+    const variables = {
+        "patch": {
+            "filter": {},
+            "remove": {
+                "sdgs": [{"id": sdg}],
+                "sdg_matches": []
+            }
+        }
+    };
+
+    // The following loop is necessary because dgraph cannot handle too many parallel mutations
+    // as this would lead dgraph into crashing :(
+    // To overcome this problem/bug/shortcoming, this loop will enforce strictly sequential mutations.
+    for (let i = 0; i < nBatches; i++) {
+        variables.patch.remove.sdg_matches = constructs.slice(i * szBatch , i * szBatch + szBatch);
+
+        log.debug(`dropSDG ${sdg} batch ${i + 1}`);
+
+        const result = await runRequest(cfg.dbServiceUrl, { query, variables });
+
+        if ("errors" in result) {
+            log.error(
+                `dropping data failed: ${JSON.stringify(result.errors, null, "  ")}`
+            );
+        }
+    }
 
     // After the terms are fully cleared,
     //    it can get reindexed via a message to the indexer.
@@ -99,52 +138,7 @@ async function dropSDG([sdg, constructs]) {
     MQ.signal({sdg});
 }
 
-async function dropMatch(match) {
-    const query = `
-    mutation dropMatches(
-        $construct: UpdateSdgMatchInput!, 
-        $matcher: UpdateInfoObjectInput!
-    ) {
-      updateSdgMatch (input: $construct) {
-        sdgMatch {
-          construct
-        }
-      }
-      
-      updateInfoObject (input: $matcher) {
-        infoObject {
-          link
-        }
-      }
-    }`;
 
-    // 2. drop all objects from matching terms, build object sdgs and terms
-    const construct = {
-        "filter": {"construct": {"eq": match.construct}},
-        "remove": {
-            "objects": match.objects
-        }
-    };
-
-    // 3. drop all sdgs and matching terms from infoobjects
-    const matcher = {
-        "filter": {"has": "sdg_matches"},
-        "remove": {
-            "sdg_matches": [{"construct": match.construct}],
-            "sdgs": [{"id": match.sdg.id}]
-        }
-    };
-
-    const variables = { construct, matcher };
-
-    const result = await runRequest(cfg.dbServiceUrl, { query, variables });
-
-    if ("errors" in result) {
-        log.error(
-            `dropping data failed: ${JSON.stringify(result.errors, null, "  ")}`
-        );
-    }
-}
 
 async function runRequest(targetHost, bodyObject) {
     let result;
