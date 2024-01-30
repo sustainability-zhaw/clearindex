@@ -138,8 +138,6 @@ async function dropSDG([sdg, constructs]) {
     MQ.signal({sdg});
 }
 
-
-
 async function runRequest(targetHost, bodyObject) {
     let result;
     let n = 0;
