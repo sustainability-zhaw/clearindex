@@ -1,0 +1,24 @@
+# This file is used as override for 
+#     sustainability-zhaw/integration-test/docker-compose.yml
+
+services:
+  clearindex:
+    # use a fake image name to prevent docker-compose from pulling the real image
+    image: local-clearindex
+
+    # https://docs.docker.com/compose/multiple-compose-files/merge/
+    # All paths in the files are relative to the base compose file
+    # (the first one specified).
+    build:
+      context: ../clearindex
+      
+    restart: 'no'
+    depends_on:
+      database:
+        condition: service_healthy
+      message-queue:
+        condition: service_healthy
+    configs:
+      - source: clearindex-config
+        target: /etc/app/config.yaml
+        
