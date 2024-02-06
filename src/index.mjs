@@ -26,8 +26,9 @@ import defaults from "./defaults.json" with {type: "json"};
 const cfg = await Config.readConfig(
     [
         "/etc/app/config.yaml",
+        "/etc/app/config.json", // this is a fallback due to python service inconsistencies
         "./config.yaml",
-        "./tools/config.yaml"
+        "./tools/config.yaml",
     ],
     ["service.dbhost", "service.mq_host"],
     defaults
