@@ -39,8 +39,14 @@ const log = Logger.get("index");
 
 log.debug(cfg);
 
-MQ.init(cfg.service);
-MQ.connect();
+// connect to the message queue but keep the service up if it fails
+try {
+    MQ.init(cfg.service);
+    MQ.connect();
+}
+catch (err) {
+    log.error(err);
+}
 
 const app = new Koa();
 const router = new Router;
