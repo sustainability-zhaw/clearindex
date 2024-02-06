@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@koa/router": "^12.0.1",
-    "@phish108/yaml-configurator": "^1.1.1",
+    "@phish108/yaml-configurator": "^1.2.0",
     "amqplib": "^0.10.3",
     "koa": "^2.14.2",
     "koa-body": "^6.0.1",
