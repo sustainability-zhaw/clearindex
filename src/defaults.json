@@ -1,6 +1,7 @@
 {
     "api": {
-        "port": 8080
+        "port": 8080,
+        "batchsize": 3
     },
     "service": {
         "dbhost": "database:8080",

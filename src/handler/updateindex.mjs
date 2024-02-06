@@ -8,6 +8,7 @@ const cfg = {};
 export function updateIndex(config) {
     cfg.service = config.service;
     cfg.dbServiceUrl = `http://${config.service.dbhost}/graphql`;
+    cfg.batchsize = config.api.batchsize;
 
     return handler;
 }
@@ -89,7 +90,7 @@ function arrangeConstructs(index, construct) {
  * data is the second.
  */
 async function dropSDG([sdg, constructs]) {
-    const szBatch = 2;
+    const szBatch = cfg.batchsize;
     const query = `
     mutation deleteMatches($patch: UpdateInfoObjectInput!){
         updateInfoObject(input:$patch) {
