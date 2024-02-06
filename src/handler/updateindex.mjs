@@ -89,7 +89,7 @@ function arrangeConstructs(index, construct) {
  * data is the second.
  */
 async function dropSDG([sdg, constructs]) {
-    const szBatch = 15;
+    const szBatch = 2;
     const query = `
     mutation deleteMatches($patch: UpdateInfoObjectInput!){
         updateInfoObject(input:$patch) {
@@ -99,7 +99,7 @@ async function dropSDG([sdg, constructs]) {
 
     log.debug(`dropSDG ${sdg} with ${constructs.length} constructs`);
 
-    // drop constructs in batches of 50
+    // drop constructs in batches of szBatch
     const nBatches = ~~(constructs.length / szBatch) + 1;
 
     log.debug(`dropSDG ${sdg} in ${nBatches + 1} batches`);
