@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/sustainability-zhaw/clearindex#readme",
   "devDependencies": {
-    "@eslint/js": "8.55.0",
+    "@eslint/js": "8.57.0",
     "eslint": "8.57.0",
     "globals": "14.0.0"
   },
